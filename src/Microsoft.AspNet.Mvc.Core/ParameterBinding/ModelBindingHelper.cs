@@ -203,7 +203,7 @@ namespace Microsoft.AspNet.Mvc
             }
         }
 
-        private static Expression<Func<ModelBindingContext, string, bool>> GetIncludePredicateExpression<TModel>
+        internal static Expression<Func<ModelBindingContext, string, bool>> GetIncludePredicateExpression<TModel>
             (string prefix, Expression<Func<TModel, object>>[] expressions)
         {
             if (expressions.Length == 0)

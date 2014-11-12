@@ -51,54 +51,22 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 
         protected override IReadOnlyList<string> ComputeBinderIncludeProperties()
         {
-            var propertyBindingInfo = PrototypeCache.PropertyBindingInfo?.ToList();
-            if (propertyBindingInfo != null && propertyBindingInfo.Count != 0)
+            // Start with everything included
+            var includedProperties = Properties.Select(p => p.PropertyName);
+
+            if (PrototypeCache.PropertyBindingInfo != null)
             {
-                if (string.IsNullOrEmpty(propertyBindingInfo[0].Include))
+                // Each attribute has a chance to filter the list further
+                foreach (var propertyBindingInfo in PrototypeCache.PropertyBindingInfo)
                 {
-                    return Properties.Select(property => property.PropertyName).ToList();
-                }
-
-                var includeFirst = SplitString(propertyBindingInfo[0].Include).ToList();
-                if (propertyBindingInfo.Count != 2)
-                {
-                    return includeFirst;
-                }
-
-                var includedAtType = SplitString(propertyBindingInfo[1].Include).ToList();
-
-                if (includeFirst.Count == 0 && includedAtType.Count == 0)
-                {
-                    // Need to include everything by default.
-                    return Properties.Select(property => property.PropertyName).ToList();
-                }
-                else
-                {
-                    return includeFirst.Intersect(includedAtType).ToList();
+                    if (propertyBindingInfo.Include != null && propertyBindingInfo.Include.Length > 0)
+                    {
+                        includedProperties = includedProperties.Intersect(propertyBindingInfo.Include);
+                    }
                 }
             }
 
-            // Need to include everything by default.
-            return Properties.Select(property => property.PropertyName).ToList();
-        }
-
-        protected override IReadOnlyList<string> ComputeBinderExcludeProperties()
-        {
-            var propertyBindingInfo = PrototypeCache.PropertyBindingInfo?.ToList();
-            if (propertyBindingInfo != null && propertyBindingInfo.Count != 0)
-            {
-                var excludeFirst = SplitString(propertyBindingInfo[0].Exclude).ToList();
-
-                if (propertyBindingInfo.Count != 2)
-                {
-                    return excludeFirst;
-                }
-
-                var excludedAtType = SplitString(propertyBindingInfo[1].Exclude).ToList();
-                return excludeFirst.Union(excludedAtType).ToList();
-            }
-
-            return base.ComputeBinderExcludeProperties();
+            return includedProperties.ToList();
         }
 
         protected override bool ComputeConvertEmptyStringToNull()

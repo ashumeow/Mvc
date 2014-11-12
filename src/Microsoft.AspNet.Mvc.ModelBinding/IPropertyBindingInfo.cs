@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Open Technologies, Inc. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
+
 namespace Microsoft.AspNet.Mvc
 {
     /// <summary>
@@ -9,13 +11,13 @@ namespace Microsoft.AspNet.Mvc
     public interface IPropertyBindingInfo
     {
         /// <summary>
-        /// Comma separated set of properties which are to be excluded during model binding.
+        /// An array of properties which are to be included during model binding.
         /// </summary>
-        string Exclude { get; }
+        string[] Include { get; }
 
         /// <summary>
-        /// Comma separated set of properties which are to be included during model binding.
+        /// Gets a type which derives from <see cref="IModelPropertyFilterProvider"/>.
         /// </summary>
-        string Include { get; }
+        Type PropertyFilterProviderType { get; }
     }
 }

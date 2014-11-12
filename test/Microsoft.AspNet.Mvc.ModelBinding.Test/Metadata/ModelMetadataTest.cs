@@ -65,17 +65,6 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                       m => m.BinderIncludeProperties,
                       nonEmptyPropertyList
                     },
-                    { m => m.BinderExcludeProperties = null, m => m.BinderExcludeProperties, null },
-                    {
-                        m => m.BinderExcludeProperties = emptyPropertyList,
-                        m => m.BinderExcludeProperties,
-                        emptyPropertyList
-                    },
-                    {
-                        m => m.BinderExcludeProperties = nonEmptyPropertyList,
-                        m => m.BinderExcludeProperties,
-                        nonEmptyPropertyList
-                    },
                 };
             }
         }
@@ -126,7 +115,6 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             Assert.Null(metadata.BinderModelName);
             Assert.Null(metadata.BinderMetadata);
             Assert.Null(metadata.BinderIncludeProperties);
-            Assert.Null(metadata.BinderExcludeProperties);
         }
 
         // IsComplexType

@@ -66,6 +66,9 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         {
             CacheKey = prototype.CacheKey;
             PrototypeCache = prototype.PrototypeCache;
+            BinderMetadata = prototype.BinderMetadata;
+            BinderIncludeProperties = prototype.BinderIncludeProperties;
+            BinderModelName = prototype.BinderModelName;
             _isComplexType = prototype.IsComplexType;
             _isComplexTypeComputed = true;
         }
@@ -120,27 +123,6 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             {
                 _binderIncludeProperties = value;
                 _isBinderIncludePropertiesComputed = true;
-            }
-        }
-
-        /// <inheritdoc />
-        public sealed override IReadOnlyList<string> BinderExcludeProperties
-        {
-            get
-            {
-                if (!_isBinderExcludePropertiesComputed)
-                {
-                    _binderExcludeProperties = ComputeBinderExcludeProperties();
-                    _isBinderExcludePropertiesComputed = true;
-                }
-
-                return _binderExcludeProperties;
-            }
-
-            set
-            {
-                _binderExcludeProperties = value;
-                _isBinderExcludePropertiesComputed = true;
             }
         }
 
@@ -483,11 +465,6 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         protected virtual IReadOnlyList<string> ComputeBinderIncludeProperties()
         {
             return base.BinderIncludeProperties;
-        }
-
-        protected virtual IReadOnlyList<string> ComputeBinderExcludeProperties()
-        {
-            return base.BinderExcludeProperties;
         }
 
         protected virtual string ComputeBinderModelNamePrefix()

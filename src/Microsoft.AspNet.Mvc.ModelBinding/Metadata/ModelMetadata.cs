@@ -58,11 +58,6 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         public virtual IReadOnlyList<string> BinderIncludeProperties { get; set; }
 
         /// <summary>
-        /// Properties which are to be excluded while binding this model.
-        /// </summary>
-        public virtual IReadOnlyList<string> BinderExcludeProperties { get; set; }
-
-        /// <summary>
         /// Gets or sets a binder metadata for this model.
         /// </summary>
         public virtual IBinderMetadata BinderMetadata { get; set; }
@@ -204,6 +199,11 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 return _properties;
             }
         }
+
+        /// <summary>
+        /// A <see cref="Type"/> which implements <see cref="IModelPropertyFilterProvider"/> .
+        /// </summary>
+        public Type PropertyFilterProviderType { get; set; }
 
         public string PropertyName
         {

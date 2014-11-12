@@ -26,7 +26,7 @@ namespace ModelBindingWebSite
                             m.ModelBinders.Insert(0, typeof(TestMetadataAwareBinder));
                         });
 
-                services.AddSingleton<ICalculator, DefaultCalculator>();
+                services.AddSingleton<ITestService, TestService>();
             });
 
             // Add MVC to the request pipeline

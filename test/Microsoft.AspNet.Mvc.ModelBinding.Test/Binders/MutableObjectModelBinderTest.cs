@@ -10,8 +10,10 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNet.Testing;
+using Microsoft.Framework.DependencyInjection;
 using Moq;
 using Xunit;
+using Microsoft.AspNet.Http;
 
 namespace Microsoft.AspNet.Mvc.ModelBinding
 {
@@ -343,9 +345,9 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 ValueProvider = mockValueProvider.Object,
                 OperationBindingContext = new OperationBindingContext
                 {
-                    ModelBinder = mockDtoBinder.Object,
-                    MetadataProvider = new DataAnnotationsModelMetadataProvider(),
-                    ValidatorProvider = Mock.Of<IModelValidatorProvider>()
+                ModelBinder = mockDtoBinder.Object,
+                MetadataProvider = new DataAnnotationsModelMetadataProvider(),
+                ValidatorProvider = Mock.Of<IModelValidatorProvider>()
                 }
             };
 
@@ -388,9 +390,9 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 ValueProvider = mockValueProvider.Object,
                 OperationBindingContext = new OperationBindingContext
                 {
-                    ModelBinder = mockDtoBinder.Object,
-                    MetadataProvider = new DataAnnotationsModelMetadataProvider(),
-                    ValidatorProvider = Mock.Of<IModelValidatorProvider>()
+                ModelBinder = mockDtoBinder.Object,
+                MetadataProvider = new DataAnnotationsModelMetadataProvider(),
+                ValidatorProvider = Mock.Of<IModelValidatorProvider>()
                 }
             };
 
@@ -555,8 +557,8 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 ModelMetadata = GetMetadataForType(typeof(PersonWithBindExclusion)),
                 OperationBindingContext = new OperationBindingContext
                 {
-                    ValidatorProvider = Mock.Of<IModelValidatorProvider>(),
-                    MetadataProvider = new DataAnnotationsModelMetadataProvider()
+                ValidatorProvider = Mock.Of<IModelValidatorProvider>(),
+                MetadataProvider = new DataAnnotationsModelMetadataProvider()
                 }
             };
 
@@ -583,14 +585,47 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 "LastName",
                 "PropertyWithDefaultValue"
             };
-            var bindingContext = new ModelBindingContext
+
+            var operationBindingContext = new OperationBindingContext()
+            {
+                HttpContext = Mock.Of<HttpContext>(),
+                ValidatorProvider = Mock.Of<IModelValidatorProvider>(),
+                MetadataProvider = new DataAnnotationsModelMetadataProvider(),
+            };
+
+            var bindingContext = new ModelBindingContext()
             {
                 ModelMetadata = GetMetadataForType(typeof(Person)),
-                OperationBindingContext = new OperationBindingContext
-                {
-                    ValidatorProvider = Mock.Of<IModelValidatorProvider>(),
-                    MetadataProvider = new DataAnnotationsModelMetadataProvider()
-                }
+                OperationBindingContext = operationBindingContext,
+            };
+
+            var testableBinder = new TestableMutableObjectModelBinder();
+
+            // Act
+            var propertyMetadatas = testableBinder.GetMetadataForProperties(bindingContext);
+            var returnedPropertyNames = propertyMetadatas.Select(o => o.PropertyName).ToArray();
+
+            // Assert
+            Assert.Equal(expectedPropertyNames, returnedPropertyNames);
+        }
+
+        [Fact]
+        public void GetMetadataForProperties_ReturnsOnlyWhiteListedProperties_UsingBindAttributeInclude()
+        {
+            // Arrange
+            var expectedPropertyNames = new[] { "IncludedExplicitly1", "IncludedExplicitly2" };
+
+            var operationBindingContext = new OperationBindingContext()
+            {
+                HttpContext = Mock.Of<HttpContext>(),
+                ValidatorProvider = Mock.Of<IModelValidatorProvider>(),
+                MetadataProvider = new DataAnnotationsModelMetadataProvider(),
+            };
+
+            var bindingContext = new ModelBindingContext()
+            {
+                ModelMetadata = GetMetadataForType(typeof(TypeWithIncludedPropertiesUsingBindAttribute)),
+                OperationBindingContext = operationBindingContext,
             };
 
             var testableBinder = new TestableMutableObjectModelBinder();
@@ -612,7 +647,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 ModelMetadata = GetMetadataForObject(new ModelWithMixedBindingBehaviors()),
                 OperationBindingContext = new OperationBindingContext
                 {
-                    ValidatorProvider = Mock.Of<IModelValidatorProvider>()
+                ValidatorProvider = Mock.Of<IModelValidatorProvider>()
                 }
             };
 
@@ -689,7 +724,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 ModelName = "theModel",
                 OperationBindingContext = new OperationBindingContext
                 {
-                    ValidatorProvider = Mock.Of<IModelValidatorProvider>()
+                ValidatorProvider = Mock.Of<IModelValidatorProvider>()
                 }
             };
             var dto = new ComplexModelDto(containerMetadata, containerMetadata.Properties);
@@ -735,7 +770,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 ModelState = new ModelStateDictionary(),
                 OperationBindingContext = new OperationBindingContext
                 {
-                    ValidatorProvider = Mock.Of<IModelValidatorProvider>()
+                ValidatorProvider = Mock.Of<IModelValidatorProvider>()
                 }
             };
             var validationContext = new ModelValidationContext(new EmptyModelMetadataProvider(),
@@ -1164,7 +1199,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 ModelName = "theModel",
                 OperationBindingContext = new OperationBindingContext
                 {
-                    ValidatorProvider = new CompositeModelValidatorProvider(provider.Object)
+                ValidatorProvider = new CompositeModelValidatorProvider(provider.Object)
                 }
             };
         }
@@ -1352,6 +1387,58 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 
         private class ValueBinderMetadataAttribute : Attribute, IValueProviderMetadata
         {
+        }
+
+        [Bind(Include = new[] { nameof(IncludedExplicitly1), nameof(IncludedExplicitly2) })]
+        private class TypeWithIncludedPropertiesUsingBindAttribute
+        {
+            public int ExcludedByDefault1 { get; set; }
+
+            public int ExcludedByDefault2 { get; set; }
+
+            public int IncludedExplicitly1 { get; set; }
+
+            public int IncludedExplicitly2 { get; set; }
+        }
+
+        [Bind(typeof(ExcludedProvider))]
+        private class TypeWithExcludedPropertiesUsingBindAttribute
+        {
+            public int Excluded1 { get; set; }
+
+            public int Excluded2 { get; set; }
+
+            public int IncludedByDefault1 { get; set; }
+            public int IncludedByDefault2 { get; set; }
+        }
+
+        public class ExcludedProvider : IModelPropertyFilterProvider
+        {
+            public Func<ModelBindingContext, string, bool> PropertyFilter
+            {
+                get
+                {
+                    return (context, propertyName) =>
+                       !string.Equals("Excluded1", propertyName, StringComparison.OrdinalIgnoreCase) &&
+                       !string.Equals("Excluded2", propertyName, StringComparison.OrdinalIgnoreCase);
+                }
+            }
+        }
+
+        private IServiceProvider CreateServices()
+        {
+            var services = new Mock<IServiceProvider>(MockBehavior.Strict);
+
+            var typeActivator = new Mock<ITypeActivator>(MockBehavior.Strict);
+            typeActivator
+                .Setup(f => f.CreateInstance(It.IsAny<IServiceProvider>(), typeof(ExcludedProvider)))
+                .Returns(new ExcludedProvider());
+
+            services
+                .Setup(s => s.GetService(typeof(ITypeActivator)))
+                .Returns(typeActivator.Object);
+
+            return services.Object;
         }
 
         public class TestableMutableObjectModelBinder : MutableObjectModelBinder

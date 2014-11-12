@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.AspNet.Mvc.ModelBinding;
 
 namespace Microsoft.AspNet.Mvc
 {
@@ -11,17 +12,37 @@ namespace Microsoft.AspNet.Mvc
     /// This attribute can be used on action parameters and types, to indicate model level metadata.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Parameter, AllowMultiple = false, Inherited = true)]
-    public sealed class BindAttribute : Attribute, IModelNameProvider, IPropertyBindingInfo
+    public sealed class BindAttribute : Attribute, IModelNameProvider, IModelPropertyFilterProvider
     {
         /// <summary>
-        /// Comma separated set of properties which are to be excluded during model binding.
+        /// Creates a new instace of <see cref="BindAttribute"/>.
         /// </summary>
-        public string Exclude { get; set; } = string.Empty;
+        public BindAttribute()
+        {
+        }
 
         /// <summary>
-        /// Comma separated set of properties which are to be included during model binding.
+        /// Creates a new instance of <see cref="BindAttribute"/>.
         /// </summary>
-        public string Include { get; set; } = string.Empty;
+        /// <param name="filterProviderType">The type which implements <see cref="IModelPropertyFilterProvider"/>.
+        /// </param>
+        public BindAttribute([NotNull] Type filterProviderType)
+        {
+            if (!typeof(IModelPropertyFilterProvider).IsAssignableFrom(filterProviderType))
+            {
+                var message = Resources.FormatTypeMustDeriveFromType(filterProviderType.FullName,
+                                                                     typeof(IModelPropertyFilterProvider).FullName);
+                throw new ArgumentException(message, nameof(filterProviderType));
+            }
+
+            PropertyFilterProviderType = filterProviderType;
+        }
+
+        /// <inheritdoc />
+        public Type PropertyFilterProviderType { get; }
+
+        /// <inheritdoc />
+        public string[] Include { get; set; }
 
         // This property is exposed for back compat reasons.
         /// <summary>
@@ -40,18 +61,29 @@ namespace Microsoft.AspNet.Mvc
             }
         }
 
-        public static bool IsPropertyAllowed(string propertyName,
-                                             IReadOnlyList<string> includeProperties,
-                                             IReadOnlyList<string> excludeProperties)
+        public Func<ModelBindingContext, string, bool> PropertyFilter
         {
-            // We allow a property to be bound if its both in the include list AND not in the exclude list.
-            // An empty exclude list implies no properties are disallowed.
-            var includeProperty = (includeProperties != null) &&
-                                   includeProperties.Contains(propertyName, StringComparer.OrdinalIgnoreCase);
-            var excludeProperty = (excludeProperties != null) &&
-                                  excludeProperties.Contains(propertyName, StringComparer.OrdinalIgnoreCase);
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
 
-            return includeProperty && !excludeProperty;
+
+        /// <summary>
+        /// Checks if a given <paramref name="propertyName"/> is allowed.
+        /// </summary>
+        /// <param name="propertyName">Name of the property to check.</param>
+        /// <param name="includeProperties"></param>
+        /// <returns><c>true</c> if <paramref name="propertyName"/> exists in <paramref name="includeProperties"/>
+        /// or if <paramref name="includeProperties"/> is null or empty. <c>false</c> otherwise.</returns>
+        public static bool IsPropertyAllowed(string propertyName,
+                                             IReadOnlyList<string> includeProperties)
+        {
+            var includeProperty = (includeProperties == null) ||
+                                   (includeProperties.Count == 0) ||
+                                   includeProperties.Contains(propertyName, StringComparer.OrdinalIgnoreCase);
+            return includeProperty;
         }
     }
 }
