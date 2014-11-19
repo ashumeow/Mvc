@@ -41,6 +41,7 @@ namespace Microsoft.AspNet.Mvc
             var i = 0;
             Assert.Equal(9, mvcOptions.ModelBinders.Count);
             Assert.Equal(typeof(ServicesModelBinder), mvcOptions.ModelBinders[i++].OptionType);
+            Assert.Equal(typeof(BinderTypeBasedModelBinder), mvcOptions.ModelBinders[i++].OptionType);
             Assert.Equal(typeof(BodyModelBinder), mvcOptions.ModelBinders[i++].OptionType);
             Assert.Equal(typeof(TypeConverterModelBinder), mvcOptions.ModelBinders[i++].OptionType);
             Assert.Equal(typeof(TypeMatchModelBinder), mvcOptions.ModelBinders[i++].OptionType);
