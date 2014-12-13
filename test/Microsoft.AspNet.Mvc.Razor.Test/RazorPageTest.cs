@@ -98,10 +98,10 @@ namespace Microsoft.AspNet.Mvc.Razor
         {
             // Arrange
             var viewContext = CreateViewContext();
-            var page = CreatePage(v =>
+            var page = CreatePage(async v =>
             {
                 v.StartWritingScope();
-                v.FlushAsync();
+                await v.FlushAsync();
             });
 
             // Act
@@ -522,9 +522,28 @@ namespace Microsoft.AspNet.Mvc.Razor
             await page.ExecuteAsync();
             page.IsLayoutBeingRendered = true;
 
-            // Assert
+            // Assert (does not throw)
             var renderAsyncDelegate = page.SectionWriters["test-section"];
-            await Assert.DoesNotThrowAsync(() => renderAsyncDelegate(TextWriter.Null));
+            await renderAsyncDelegate(TextWriter.Null);
+        }
+
+        [Fact]
+        public async Task FlushAsync_ReturnsEmptyHtmlString()
+        {
+            // Arrange
+            HtmlString actual = null;
+            var writer = new Mock<TextWriter>();
+            var context = CreateViewContext(writer.Object);
+            var page = CreatePage(async p =>
+            {
+                actual = await p.FlushAsync();
+            }, context);
+
+            // Act
+            await page.ExecuteAsync();
+
+            // Assert
+            Assert.Same(HtmlString.Empty, actual);
         }
 
         [Fact]

@@ -251,19 +251,19 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         }
 
         /// <summary>
-        /// The type '{0}' must derive from '{1}'.
+        /// The type '{0}' does not implement the interface '{1}'.
         /// </summary>
-        internal static string TypeMustDeriveFromType
+        internal static string PropertyBindingPredicateProvider_WrongType
         {
-            get { return GetString("TypeMustDeriveFromType"); }
+            get { return GetString("PropertyBindingPredicateProvider_WrongType"); }
         }
 
         /// <summary>
-        /// The type '{0}' must derive from '{1}'.
+        /// The type '{0}' does not implement the interface '{1}'.
         /// </summary>
-        internal static string FormatTypeMustDeriveFromType(object p0, object p1)
+        internal static string FormatPropertyBindingPredicateProvider_WrongType(object p0, object p1)
         {
-            return string.Format(CultureInfo.CurrentCulture, GetString("TypeMustDeriveFromType"), p0, p1);
+            return string.Format(CultureInfo.CurrentCulture, GetString("PropertyBindingPredicateProvider_WrongType"), p0, p1);
         }
 
         /// <summary>
@@ -440,6 +440,22 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         internal static string FormatModelStateDictionary_MaxModelStateErrors()
         {
             return GetString("ModelStateDictionary_MaxModelStateErrors");
+        }
+
+        /// <summary>
+        /// The type '{0}' must implement either '{1}' or '{2}' to be used as a model binder.
+        /// </summary>
+        internal static string BinderType_MustBeIModelBinderOrIModelBinderProvider
+        {
+            get { return GetString("BinderType_MustBeIModelBinderOrIModelBinderProvider"); }
+        }
+
+        /// <summary>
+        /// The type '{0}' must implement either '{1}' or '{2}' to be used as a model binder.
+        /// </summary>
+        internal static string FormatBinderType_MustBeIModelBinderOrIModelBinderProvider(object p0, object p1, object p2)
+        {
+            return string.Format(CultureInfo.CurrentCulture, GetString("BinderType_MustBeIModelBinderOrIModelBinderProvider"), p0, p1, p2);
         }
 
         private static string GetString(string name, params string[] formatterNames)

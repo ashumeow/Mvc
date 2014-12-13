@@ -33,8 +33,8 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         private bool _showForEdit;
         private IBinderMetadata _binderMetadata;
         private string _binderModelName;
-        private IReadOnlyList<string> _binderIncludeProperties;
-        private IReadOnlyList<string> _binderExcludeProperties;
+        private IPropertyBindingPredicateProvider _propertyBindingPredicateProvider;
+        private Type _binderType;
 
         private bool _convertEmptyStringToNullComputed;
         private bool _nullDisplayTextComputed;
@@ -52,9 +52,9 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         private bool _showForDisplayComputed;
         private bool _showForEditComputed;
         private bool _isBinderMetadataComputed;
-        private bool _isBinderIncludePropertiesComputed;
         private bool _isBinderModelNameComputed;
-        private bool _isBinderExcludePropertiesComputed;
+        private bool _isBinderTypeComputed;
+        private bool _propertyBindingPredicateProviderComputed;
 
         // Constructor for creating real instances of the metadata class based on a prototype
         protected CachedModelMetadata(CachedModelMetadata<TPrototypeCache> prototype, Func<object> modelAccessor)
@@ -100,49 +100,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 _binderMetadata = value;
                 _isBinderMetadataComputed = true;
             }
-        }
-
-        /// <inheritdoc />
-        public sealed override IReadOnlyList<string> BinderIncludeProperties
-        {
-            get
-            {
-                if (!_isBinderIncludePropertiesComputed)
-                {
-                    _binderIncludeProperties = ComputeBinderIncludeProperties();
-                    _isBinderIncludePropertiesComputed = true;
-                }
-
-                return _binderIncludeProperties;
             }
-
-            set
-            {
-                _binderIncludeProperties = value;
-                _isBinderIncludePropertiesComputed = true;
-            }
-        }
-
-        /// <inheritdoc />
-        public sealed override IReadOnlyList<string> BinderExcludeProperties
-        {
-            get
-            {
-                if (!_isBinderExcludePropertiesComputed)
-                {
-                    _binderExcludeProperties = ComputeBinderExcludeProperties();
-                    _isBinderExcludePropertiesComputed = true;
-                }
-
-                return _binderExcludeProperties;
-            }
-
-            set
-            {
-                _binderExcludeProperties = value;
-                _isBinderExcludePropertiesComputed = true;
-            }
-        }
 
         /// <inheritdoc />
         public sealed override string BinderModelName
@@ -420,6 +378,25 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             }
         }
 
+        public sealed override IPropertyBindingPredicateProvider PropertyBindingPredicateProvider
+        {
+            get
+            {
+                if (!_propertyBindingPredicateProviderComputed)
+                {
+                    _propertyBindingPredicateProvider = ComputePropertyBindingPredicateProvider();
+                    _propertyBindingPredicateProviderComputed = true;
+                }
+                return _propertyBindingPredicateProvider;
+            }
+
+            set
+            {
+                _propertyBindingPredicateProvider = value;
+                _propertyBindingPredicateProviderComputed = true;
+            }
+        }
+
         /// <inheritdoc />
         public sealed override bool ShowForDisplay
         {
@@ -473,21 +450,40 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             }
         }
 
+        /// <inheritdoc />
+        public sealed override Type BinderType
+        {
+            get
+            {
+                if (!_isBinderTypeComputed)
+                {
+                    _binderType = ComputeBinderType();
+                    _isBinderTypeComputed = true;
+                }
+                return _binderType;
+            }
+            set
+            {
+                _binderType = value;
+                _isBinderTypeComputed = true;
+            }
+        }
+
         protected TPrototypeCache PrototypeCache { get; set; }
+
+        protected virtual Type ComputeBinderType()
+        {
+            return base.BinderType;
+        }
 
         protected virtual IBinderMetadata ComputeBinderMetadata()
         {
             return base.BinderMetadata;
         }
 
-        protected virtual IReadOnlyList<string> ComputeBinderIncludeProperties()
+        protected virtual IPropertyBindingPredicateProvider ComputePropertyBindingPredicateProvider()
         {
-            return base.BinderIncludeProperties;
-        }
-
-        protected virtual IReadOnlyList<string> ComputeBinderExcludeProperties()
-        {
-            return base.BinderExcludeProperties;
+            return base.PropertyBindingPredicateProvider;
         }
 
         protected virtual string ComputeBinderModelNamePrefix()
