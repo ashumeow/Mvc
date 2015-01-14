@@ -109,7 +109,6 @@ namespace Microsoft.AspNet.Mvc.Test
             var id = Assert.Single(main.Parameters);
 
             Assert.Equal("id", id.Name);
-            Assert.False(id.IsOptional);
             Assert.Null(id.BinderMetadata);
             Assert.Equal(typeof(int), id.ParameterType);
         }
@@ -129,14 +128,12 @@ namespace Microsoft.AspNet.Mvc.Test
             var id = Assert.Single(main.Parameters, p => p.Name == "id");
 
             Assert.Equal("id", id.Name);
-            Assert.False(id.IsOptional);
             Assert.Null(id.BinderMetadata);
             Assert.Equal(typeof(int), id.ParameterType);
 
             var entity = Assert.Single(main.Parameters, p => p.Name == "entity");
 
             Assert.Equal("entity", entity.Name);
-            Assert.False(entity.IsOptional);
             Assert.IsType<FromBodyAttribute>(entity.BinderMetadata);
             Assert.Equal(typeof(TestActionParameter), entity.ParameterType);
         }
@@ -156,47 +153,20 @@ namespace Microsoft.AspNet.Mvc.Test
             var id = Assert.Single(main.Parameters, p => p.Name == "id");
 
             Assert.Equal("id", id.Name);
-            Assert.False(id.IsOptional);
             Assert.Null(id.BinderMetadata);
             Assert.Equal(typeof(int), id.ParameterType);
 
             var upperCaseId = Assert.Single(main.Parameters, p => p.Name == "ID");
 
             Assert.Equal("ID", upperCaseId.Name);
-            Assert.False(upperCaseId.IsOptional);
             Assert.Null(upperCaseId.BinderMetadata);
             Assert.Equal(typeof(int), upperCaseId.ParameterType);
 
             var pascalCaseId = Assert.Single(main.Parameters, p => p.Name == "Id");
 
             Assert.Equal("Id", pascalCaseId.Name);
-            Assert.False(pascalCaseId.IsOptional);
             Assert.Null(id.BinderMetadata);
             Assert.Equal(typeof(int), pascalCaseId.ParameterType);
-        }
-
-        [Theory]
-        [InlineData(nameof(ActionParametersController.OptionalInt), typeof(Nullable<int>))]
-        [InlineData(nameof(ActionParametersController.OptionalChar), typeof(char))]
-        public void GetDescriptors_AddsParametersWithDefaultValues_AsOptionalParameters(
-            string actionName,
-            Type parameterType)
-        {
-            // Arrange & Act
-            var descriptors = GetDescriptors(
-                typeof(ActionParametersController).GetTypeInfo());
-
-            // Assert
-            var optional = Assert.Single(descriptors,
-                d => d.Name.Equals(actionName));
-
-            Assert.NotNull(optional.Parameters);
-            var id = Assert.Single(optional.Parameters);
-
-            Assert.Equal("id", id.Name);
-            Assert.True(id.IsOptional);
-            Assert.Null(id.BinderMetadata);
-            Assert.Equal(parameterType, id.ParameterType);
         }
 
         [Fact]
@@ -216,7 +186,6 @@ namespace Microsoft.AspNet.Mvc.Test
             var entity = Assert.Single(fromBody.Parameters);
 
             Assert.Equal("entity", entity.Name);
-            Assert.False(entity.IsOptional);
             Assert.IsType<FromBodyAttribute>(entity.BinderMetadata);
             Assert.Equal(typeof(TestActionParameter), entity.ParameterType);
         }
@@ -238,7 +207,6 @@ namespace Microsoft.AspNet.Mvc.Test
             var entity = Assert.Single(notFromBody.Parameters);
 
             Assert.Equal("entity", entity.Name);
-            Assert.False(entity.IsOptional);
             Assert.Null(entity.BinderMetadata);
             Assert.Equal(typeof(TestActionParameter), entity.ParameterType);
         }
@@ -475,11 +443,9 @@ namespace Microsoft.AspNet.Mvc.Test
 
             var getPerson = Assert.Single(controller.Actions, a => a.ActionName == "GetPerson");
             Assert.Empty(getPerson.HttpMethods);
-            Assert.True(getPerson.IsActionNameMatchRequired);
 
             var showPeople = Assert.Single(controller.Actions, a => a.ActionName == "ShowPeople");
             Assert.Empty(showPeople.HttpMethods);
-            Assert.True(showPeople.IsActionNameMatchRequired);
         }
 
         [Fact]
@@ -547,7 +513,7 @@ namespace Microsoft.AspNet.Mvc.Test
                 "For action: 'Microsoft.AspNet.Mvc.Test.ControllerActionDescriptorProviderTests+" +
                 "MultipleErrorsController.Unknown'" + Environment.NewLine +
                 "Error: While processing template 'stub/[action]/[unknown]', a replacement value for the token 'unknown' " +
-                "could not be found. Available tokens: 'controller, action'." + Environment.NewLine +
+                "could not be found. Available tokens: 'action, controller'." + Environment.NewLine +
                 Environment.NewLine +
                 "Error 2:" + Environment.NewLine +
                 "For action: 'Microsoft.AspNet.Mvc.Test.ControllerActionDescriptorProviderTests+" +
@@ -1711,10 +1677,6 @@ namespace Microsoft.AspNet.Mvc.Test
         private class ActionParametersController
         {
             public void RequiredInt(int id) { }
-
-            public void OptionalInt(int? id = 5) { }
-
-            public void OptionalChar(char id = 'c') { }
 
             public void FromBodyParameter([FromBody] TestActionParameter entity) { }
 

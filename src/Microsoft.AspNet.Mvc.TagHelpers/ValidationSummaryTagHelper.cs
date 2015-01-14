@@ -12,7 +12,7 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
     /// <see cref="ITagHelper"/> implementation targeting &lt;div&gt; elements with an <c>asp-validation-summary</c>
     /// attribute.
     /// </summary>
-    [TagName("div")]
+    [HtmlElementName("div")]
     [ContentBehavior(ContentBehavior.Append)]
     public class ValidationSummaryTagHelper : TagHelper
     {
@@ -26,7 +26,6 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
         [Activate]
         protected internal IHtmlGenerator Generator { get; set; }
 
-        // TODO: https://github.com/aspnet/Razor/issues/196 Change to ValidationSummary enum once #196 has been completed.
         /// <summary>
         /// If <c>All</c> or <c>ModelOnly</c>, appends a validation summary. Acceptable values are defined by the
         /// <see cref="ValidationSummary"/> enum.

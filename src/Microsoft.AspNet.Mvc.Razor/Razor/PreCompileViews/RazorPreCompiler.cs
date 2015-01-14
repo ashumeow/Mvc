@@ -5,11 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Microsoft.AspNet.FileSystems;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Framework.DependencyInjection;
 using Microsoft.Framework.OptionsModel;
 using Microsoft.Framework.Runtime;
+using Microsoft.Framework.Runtime.Roslyn;
 
 namespace Microsoft.AspNet.Mvc.Razor
 {
@@ -19,23 +19,27 @@ namespace Microsoft.AspNet.Mvc.Razor
         private readonly IFileSystem _fileSystem;
         private readonly IMvcRazorHost _host;
 
-        public RazorPreCompiler([NotNull] IServiceProvider designTimeServiceProvider) :
+        public RazorPreCompiler([NotNull] IServiceProvider designTimeServiceProvider,
+                                [NotNull] CompilationSettings compilationSettings) :
             this(designTimeServiceProvider,
                  designTimeServiceProvider.GetRequiredService<IMvcRazorHost>(),
-                 designTimeServiceProvider.GetRequiredService<IOptions<RazorViewEngineOptions>>())
+                 designTimeServiceProvider.GetRequiredService<IOptions<RazorViewEngineOptions>>(),
+                 compilationSettings)
         {
         }
 
         public RazorPreCompiler([NotNull] IServiceProvider designTimeServiceProvider,
                                 [NotNull] IMvcRazorHost host,
-                                [NotNull] IOptions<RazorViewEngineOptions> optionsAccessor)
+                                [NotNull] IOptions<RazorViewEngineOptions> optionsAccessor,
+                                [NotNull] CompilationSettings compilationSettings)
         {
             _serviceProvider = designTimeServiceProvider;
             _host = host;
-
-            var appEnv = _serviceProvider.GetRequiredService<IApplicationEnvironment>();
             _fileSystem = optionsAccessor.Options.FileSystem;
+            CompilationSettings = compilationSettings;
         }
+
+        protected CompilationSettings CompilationSettings { get; }
 
         protected virtual string FileExtension { get; } = ".cshtml";
 
@@ -47,7 +51,7 @@ namespace Microsoft.AspNet.Mvc.Razor
             {
                 var collectionGenerator = new RazorFileInfoCollectionGenerator(
                                                 descriptors,
-                                                SyntaxTreeGenerator.GetParseOptions(context.CSharpCompilation));
+                                                CompilationSettings);
 
                 var tree = collectionGenerator.GenerateCollection();
                 context.CSharpCompilation = context.CSharpCompilation.AddSyntaxTrees(tree);
@@ -57,14 +61,11 @@ namespace Microsoft.AspNet.Mvc.Razor
         protected virtual IReadOnlyList<RazorFileInfo> CreateCompilationDescriptors(
                                                             [NotNull] IBeforeCompileContext context)
         {
-            var options = SyntaxTreeGenerator.GetParseOptions(context.CSharpCompilation);
             var list = new List<RazorFileInfo>();
 
             foreach (var info in GetFileInfosRecursive(string.Empty))
             {
-                var descriptor = ParseView(info,
-                                           context,
-                                           options);
+                var descriptor = ParseView(info, context);
 
                 if (descriptor != null)
                 {
@@ -77,7 +78,7 @@ namespace Microsoft.AspNet.Mvc.Razor
 
         private IEnumerable<RelativeFileInfo> GetFileInfosRecursive(string currentPath)
         {
-            string path = currentPath;
+            var path = currentPath;
 
             var fileInfos = _fileSystem.GetDirectoryContents(path);
             if (!fileInfos.Exists)
@@ -107,8 +108,7 @@ namespace Microsoft.AspNet.Mvc.Razor
         }
 
         protected virtual RazorFileInfo ParseView([NotNull] RelativeFileInfo fileInfo,
-                                                  [NotNull] IBeforeCompileContext context,
-                                                  [NotNull] CSharpParseOptions options)
+                                                  [NotNull] IBeforeCompileContext context)
         {
             using (var stream = fileInfo.FileInfo.CreateReadStream())
             {
@@ -124,7 +124,9 @@ namespace Microsoft.AspNet.Mvc.Razor
 
                 if (generatedCode != null)
                 {
-                    var syntaxTree = SyntaxTreeGenerator.Generate(generatedCode, fileInfo.FileInfo.PhysicalPath, options);
+                    var syntaxTree = SyntaxTreeGenerator.Generate(generatedCode,
+                                                                  fileInfo.FileInfo.PhysicalPath,
+                                                                  CompilationSettings);
                     var fullTypeName = results.GetMainClassName(_host, syntaxTree);
 
                     if (fullTypeName != null)
@@ -147,18 +149,5 @@ namespace Microsoft.AspNet.Mvc.Razor
 
             return null;
         }
-    }
-}
-
-namespace Microsoft.Framework.Runtime
-{
-    [AssemblyNeutral]
-    public interface IBeforeCompileContext
-    {
-        CSharpCompilation CSharpCompilation { get; set; }
-
-        IList<ResourceDescription> Resources { get; }
-
-        IList<Diagnostic> Diagnostics { get; }
     }
 }

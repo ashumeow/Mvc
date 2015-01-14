@@ -1056,7 +1056,7 @@ namespace Microsoft.AspNet.Mvc.FunctionalTests
             // Assert
             var user = JsonConvert.DeserializeObject<User>(response);
 
-            // Should not update any not explicitly mentioned properties. 
+            // Should not update any not explicitly mentioned properties.
             Assert.NotEqual("SomeName", user.UserName);
             Assert.NotEqual(123, user.Key);
 
@@ -1079,7 +1079,7 @@ namespace Microsoft.AspNet.Mvc.FunctionalTests
             // Assert
             var user = JsonConvert.DeserializeObject<User>(response);
 
-            // Should not update any not explicitly mentioned properties. 
+            // Should not update any not explicitly mentioned properties.
             Assert.Equal("SomeName", user.UserName);
             Assert.Equal(123, user.Key);
 
@@ -1196,6 +1196,7 @@ namespace Microsoft.AspNet.Mvc.FunctionalTests
             Assert.Equal(trackingId, actual.LastUpdatedTrackingId);
         }
 
+#if ASPNET50
         [Fact]
         public async Task UpdateVehicle_WithXml_BindsBodyServicesAndHeaders()
         {
@@ -1231,6 +1232,7 @@ namespace Microsoft.AspNet.Mvc.FunctionalTests
             Assert.Equal(postedContent.InspectedDates, actual.InspectedDates);
             Assert.Equal(trackingId, actual.LastUpdatedTrackingId);
         }
+#endif
 
         // Simulates a browser based client that does a Ajax post for partial page updates.
         [Fact]

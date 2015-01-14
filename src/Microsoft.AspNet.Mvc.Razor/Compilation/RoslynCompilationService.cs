@@ -15,7 +15,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.Framework.Runtime;
 
-namespace Microsoft.AspNet.Mvc.Razor.Compilation
+namespace Microsoft.AspNet.Mvc.Razor
 {
     /// <summary>
     /// A type that uses Roslyn to compile C# content.
@@ -29,6 +29,7 @@ namespace Microsoft.AspNet.Mvc.Razor.Compilation
         private readonly ILibraryManager _libraryManager;
         private readonly IApplicationEnvironment _environment;
         private readonly IAssemblyLoadContext _loader;
+        private readonly ICompilerOptionsProvider _compilerOptionsProvider;
 
         private readonly Lazy<List<MetadataReference>> _applicationReferences;
 
@@ -44,12 +45,14 @@ namespace Microsoft.AspNet.Mvc.Razor.Compilation
         public RoslynCompilationService(IApplicationEnvironment environment,
                                         IAssemblyLoadContextAccessor loaderAccessor,
                                         ILibraryManager libraryManager,
+                                        ICompilerOptionsProvider compilerOptionsProvider,
                                         IMvcRazorHost host)
         {
             _environment = environment;
             _loader = loaderAccessor.GetLoadContext(typeof(RoslynCompilationService).GetTypeInfo().Assembly);
             _libraryManager = libraryManager;
             _applicationReferences = new Lazy<List<MetadataReference>>(GetApplicationReferences);
+            _compilerOptionsProvider = compilerOptionsProvider;
             _classPrefix = host.MainClassNamePrefix;
         }
 
@@ -60,15 +63,19 @@ namespace Microsoft.AspNet.Mvc.Razor.Compilation
             // map to the source file. If a file does not exist on a physical file system, PhysicalPath will be null.
             // This prevents files that exist in a non-physical file system from being debugged.
             var path = fileInfo.PhysicalPath ?? fileInfo.Name;
-            var syntaxTrees = new[] { SyntaxTreeGenerator.Generate(compilationContent, path) };
-
+            var compilationSettings = _compilerOptionsProvider.GetCompilationSettings(_environment);
+            var syntaxTree = SyntaxTreeGenerator.Generate(compilationContent,
+                                                          path,
+                                                          compilationSettings);
             var references = _applicationReferences.Value;
 
             var assemblyName = Path.GetRandomFileName();
+            var compilationOptions = compilationSettings.CompilationOptions
+                                                        .WithOutputKind(OutputKind.DynamicallyLinkedLibrary);
 
             var compilation = CSharpCompilation.Create(assemblyName,
-                        options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary),
-                        syntaxTrees: syntaxTrees,
+                        options: compilationOptions,
+                        syntaxTrees: new[] { syntaxTree },
                         references: references);
 
             using (var ms = new MemoryStream())
@@ -112,10 +119,9 @@ namespace Microsoft.AspNet.Mvc.Razor.Compilation
                     }
 
                     var type = assembly.GetExportedTypes()
-                                       .First(t => t.Name.
-                                          StartsWith(_classPrefix, StringComparison.Ordinal));
+                                       .First(t => t.Name.StartsWith(_classPrefix, StringComparison.Ordinal));
 
-                    return UncachedCompilationResult.Successful(type);
+                    return UncachedCompilationResult.Successful(type, compilationContent);
                 }
             }
         }
@@ -191,7 +197,12 @@ namespace Microsoft.AspNet.Mvc.Razor.Compilation
 
         private static CompilationMessage GetCompilationMessage(DiagnosticFormatter formatter, Diagnostic diagnostic)
         {
-            return new CompilationMessage(formatter.Format(diagnostic));
+            var lineSpan = diagnostic.Location.GetMappedLineSpan();
+            return new CompilationMessage(formatter.Format(diagnostic),
+                                          startColumn: lineSpan.StartLinePosition.Character,
+                                          startLine: lineSpan.StartLinePosition.Line,
+                                          endColumn: lineSpan.EndLinePosition.Character,
+                                          endLine: lineSpan.EndLinePosition.Line);
         }
 
         private static bool IsError(Diagnostic diagnostic)
